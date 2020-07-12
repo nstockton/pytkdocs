@@ -2,7 +2,10 @@
 
 import inspect
 from abc import ABCMeta, abstractmethod
+import re
 from typing import Any, List, Optional, Tuple
+
+TAB_INDENT_REGEX = re.compile(r"^(?P<tabs>\t+)", re.MULTILINE)
 
 empty = inspect.Signature.empty
 
@@ -155,6 +158,9 @@ class Parser(metaclass=ABCMeta):
         """
         self.context = context or {}
         self.errors = []
+        if "\t" in docstring:
+            # Replace tabbed indentation, leaving all other tab characters untouched.
+            docstring = TAB_INDENT_REGEX.sub(lambda match: match.group("tabs").expandtabs(4), docstring)
         sections = self.parse_sections(docstring)
         errors = self.errors
         return sections, errors

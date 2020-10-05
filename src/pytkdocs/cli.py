@@ -17,7 +17,7 @@ import sys
 import traceback
 from contextlib import contextmanager
 from io import StringIO
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Optional
 
 from pytkdocs.loader import Loader
 from pytkdocs.objects import Object
@@ -124,7 +124,7 @@ def extract_docstring_parsing_errors(errors: dict, obj: Object) -> None:
         errors: The dictionary to update.
         obj: The object.
     """
-    if hasattr(obj, "docstring_errors") and obj.docstring_errors:
+    if hasattr(obj, "docstring_errors") and obj.docstring_errors:  # noqa: WPS421 (hasattr)
         errors[obj.path] = obj.docstring_errors
     for child in obj.children:
         extract_docstring_parsing_errors(errors, child)
@@ -146,8 +146,13 @@ def extract_errors(obj: Object) -> dict:
 
 
 def get_parser() -> argparse.ArgumentParser:
-    """Return the program argument parser."""
-    parser = argparse.ArgumentParser()
+    """
+    Return the program argument parser.
+
+    Returns:
+        The argument parser for the program.
+    """
+    parser = argparse.ArgumentParser(prog="pytkdocs")
     parser.add_argument(
         "-1",
         "--line-by-line",
@@ -160,7 +165,12 @@ def get_parser() -> argparse.ArgumentParser:
 
 @contextmanager
 def discarded_stdout():
-    """A context manager to discard standard output."""
+    """
+    Discard standard output.
+
+    Yields:
+        Nothing: We only yield to act as a context manager.
+    """
     # Discard things printed at import time to avoid corrupting our JSON output
     # See https://github.com/pawamoy/pytkdocs/issues/24
     old_stdout = sys.stdout
@@ -173,15 +183,17 @@ def discarded_stdout():
     sys.stdout = old_stdout
 
 
-def main(args: Optional[Sequence[str]] = None) -> int:
+def main(args: Optional[List[str]] = None) -> int:
     """
-    The main function, which is executed when you type `pytkdocs` or `python -m pytkdocs`.
+    Run the main program.
+
+    This function is executed when you type `pytkdocs` or `python -m pytkdocs`.
 
     Arguments:
-        args: The list of arguments.
+        args: Arguments passed from the command line.
 
     Returns:
-        An exit code between 0 and 255.
+        An exit code.
     """
     parser = get_parser()
     parsed_args: argparse.Namespace = parser.parse_args(args)  # type: ignore
@@ -191,14 +203,14 @@ def main(args: Optional[Sequence[str]] = None) -> int:
             with discarded_stdout():
                 try:
                     output = json.dumps(process_json(line))
-                except Exception as error:
+                except Exception as error:  # noqa: W0703 (we purposely catch everything)
                     # Don't fail on error. We must handle the next inputs.
                     # Instead, print error as JSON.
                     output = json.dumps({"error": str(error), "traceback": traceback.format_exc()})
-            print(output)
+            print(output)  # noqa: WPS421 (we need to print at some point)
     else:
         with discarded_stdout():
             output = json.dumps(process_json(sys.stdin.read()))
-        print(output)
+        print(output)  # noqa: WPS421 (we need to print at some point)
 
     return 0

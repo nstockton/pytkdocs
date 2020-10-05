@@ -1,63 +1,65 @@
-#!/usr/bin/env python
 """Generate data to render the credits template."""
 
 import json
+import sys
 from itertools import chain
 from pathlib import Path
 
-import requests
+import httpx
 import toml
-from pip._internal.commands.show import search_packages_info
+from pip._internal.commands.show import search_packages_info  # noqa: WPS436 (better way?)
 
 
-def clean_info(package_dict):
-    """Only keep `name` and `home-page` keys."""
-    return {k: v for k, v in package_dict.items() if k in ("name", "home-page")}
+def get_data() -> dict:
+    """
+    Return data used to generate the credits file.
 
-
-def get_data():
-    """Return data used to generate the credits file."""
-    metadata = toml.load(Path(__file__).parent.parent / "pyproject.toml")["tool"]["poetry"]
+    Returns:
+        Data required to render the credits template.
+    """
+    project_dir = Path(__file__).parent.parent
+    metadata = toml.load(project_dir / "pyproject.toml")["tool"]["poetry"]
+    lock_data = toml.load(project_dir / "poetry.lock")
     project_name = metadata["name"]
-    direct_dependencies = sorted(
-        _.lower() for _ in chain(metadata["dependencies"].keys(), metadata["dev-dependencies"].keys())
-    )
+
+    poetry_dependencies = chain(metadata["dependencies"].keys(), metadata["dev-dependencies"].keys())
+    direct_dependencies = {dep.lower() for dep in poetry_dependencies}
     direct_dependencies.remove("python")
+    indirect_dependencies = {pkg["name"].lower() for pkg in lock_data["package"]}
+    indirect_dependencies -= direct_dependencies
+    dependencies = direct_dependencies | indirect_dependencies
 
-    lock_data = toml.load(Path(__file__).parent.parent / "poetry.lock")
-    indirect_dependencies = sorted(p["name"] for p in lock_data["package"] if p["name"] not in direct_dependencies)
+    packages = {}
+    for pkg in search_packages_info(dependencies):
+        pkg = {_: pkg[_] for _ in ("name", "home-page")}
+        packages[pkg["name"].lower()] = pkg
 
-    package_info = {p["name"]: clean_info(p) for p in search_packages_info(direct_dependencies + indirect_dependencies)}
-
-    for dependency in direct_dependencies + indirect_dependencies:
-        # poetry.lock seems to always use lowercase for packages names
-        if dependency not in [_.lower() for _ in package_info.keys()]:
-            info = requests.get(f"https://pypi.python.org/pypi/{dependency}/json").json()["info"]
-            package_info[info["name"]] = {
-                "name": info["name"],
-                "home-page": info["home_page"] or info["project_url"] or info["package_url"],
-            }
-
-    lower_package_info = {}
-    for package_name, package in package_info.items():
-        lower = package_name.lower()
-        if lower != package_name:
-            lower_package_info[lower] = package
-
-    package_info.update(lower_package_info)
+    for dependency in dependencies:
+        if dependency not in packages:
+            pkg_data = httpx.get(f"https://pypi.python.org/pypi/{dependency}/json").json()["info"]
+            home_page = pkg_data["home_page"] or pkg_data["project_url"] or pkg_data["package_url"]
+            pkg_name = pkg_data["name"]
+            package = {"name": pkg_name, "home-page": home_page}
+            packages.update({pkg_name.lower(): package})
 
     return {
         "project_name": project_name,
-        "direct_dependencies": direct_dependencies,
-        "indirect_dependencies": indirect_dependencies,
-        "package_info": package_info,
+        "direct_dependencies": sorted(direct_dependencies),
+        "indirect_dependencies": sorted(indirect_dependencies),
+        "package_info": packages,
     }
 
 
-def main():
-    """Dump data as JSON."""
-    print(json.dumps(get_data()))
+def main() -> int:
+    """
+    Dump data as JSON.
+
+    Returns:
+        An exit code.
+    """
+    print(json.dumps(get_data()))  # noqa: WPS421 (side-effect)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

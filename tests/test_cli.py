@@ -3,7 +3,22 @@
 import io
 import json
 
+import pytest
+
 from pytkdocs import cli
+
+
+def test_show_help(capsys):
+    """
+    Shows help.
+
+    Arguments:
+        capsys: Pytest fixture to capture output.
+    """
+    with pytest.raises(SystemExit):
+        cli.main(["-h"])
+    captured = capsys.readouterr()
+    assert "pytkdocs" in captured.out
 
 
 def test_read_whole_stdin(monkeypatch):

@@ -10,7 +10,7 @@ from pytkdocs import cli
 
 def test_show_help(capsys):
     """
-    Shows help.
+    Show help.
 
     Arguments:
         capsys: Pytest fixture to capture output.
@@ -41,7 +41,7 @@ def test_read_whole_stdin(monkeypatch):
         ),
     )
 
-    cli.main()
+    cli.main([])
 
 
 def test_read_stdin_line_by_line(monkeypatch):

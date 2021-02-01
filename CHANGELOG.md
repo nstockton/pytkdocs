@@ -5,6 +5,28 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
+## [0.10.1](https://github.com/pawamoy/pytkdocs/releases/tag/0.10.1) - 2021-01-03
+
+<small>[Compare with 0.10.0](https://github.com/pawamoy/pytkdocs/compare/0.10.0...0.10.1)</small>
+
+### Bug Fixes
+- Warn when examples section is empty ([e1d2dfc](https://github.com/pawamoy/pytkdocs/commit/e1d2dfc3a9bff690c9061892268fd480e83c6f91) by Timothée Mazzucotelli).
+- Allow newer version of dataclasses backport ([4392f2e](https://github.com/pawamoy/pytkdocs/commit/4392f2e4669c76bf2acf74b6124f74b7734b638b) by Patrick Lannigan).
+- Ignore errors parsing c-extension modules ([1930054](https://github.com/pawamoy/pytkdocs/commit/19300544cb31f6ad6be5828d041022d7bf917668) by Wang Yuzhi).
+- Fix attribute parser for Python 3.9 ([ae80e98](https://github.com/pawamoy/pytkdocs/commit/ae80e988edf362ce99a880063639e4cd74bc44bb) by Timothée Mazzucotelli). [Issue #73](https://github.com/pawamoy/pytkdocs/issues/73) and [#75](https://github.com/pawamoy/pytkdocs/issues/75)
+
+
+## [0.10.0](https://github.com/pawamoy/pytkdocs/releases/tag/0.10.0) - 2020-12-06
+
+<small>[Compare with 0.9.0](https://github.com/pawamoy/pytkdocs/compare/0.9.0...0.10.0)</small>
+
+### Bug Fixes
+- Avoid recursion if a class has a reference to itself ([c92a791](https://github.com/pawamoy/pytkdocs/commit/c92a7911ea9f6321614bb692960f5252f79f6320) by Matthew Wardrop).
+
+### Features
+- Add initial restructured text docstring parsing ([0b58c8d](https://github.com/pawamoy/pytkdocs/commit/0b58c8d64846d3fb87588a5cf154dbd5bf60accf) by Patrick Lannigan). Issue [#67](https://github.com/pawamoy/pytkdocs/issues/67), PR [#71](https://github.com/pawamoy/pytkdocs/issues/71)
+
+
 ## [0.9.0](https://github.com/pawamoy/pytkdocs/releases/tag/0.9.0) - 2020-09-28
 
 <small>[Compare with 0.8.0](https://github.com/pawamoy/pytkdocs/compare/0.8.0...0.9.0)</small>

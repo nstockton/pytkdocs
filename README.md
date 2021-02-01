@@ -3,6 +3,8 @@
 [![ci](https://github.com/pawamoy/pytkdocs/workflows/ci/badge.svg)](https://github.com/pawamoy/pytkdocs/actions?query=workflow%3Aci)
 [![documentation](https://img.shields.io/badge/docs-mkdocs%20material-blue.svg?style=flat)](https://pawamoy.github.io/pytkdocs/)
 [![pypi version](https://img.shields.io/pypi/v/pytkdocs.svg)](https://pypi.org/project/pytkdocs/)
+[![conda version](https://img.shields.io/conda/vn/conda-forge/pytkdocs)](https://anaconda.org/conda-forge/pytkdocs)
+[![gitter](https://badges.gitter.im/join%20chat.svg)](https://gitter.im/pytkdocs/community)
 
 Load Python objects documentation.
 
@@ -42,6 +44,11 @@ With [`pipx`](https://github.com/pipxproject/pipx):
 python3.6 -m pip install --user pipx
 
 pipx install --python python3.6 pytkdocs
+```
+
+With `conda`:
+```python
+conda install -c conda-forge pytkdocs
 ```
 
 ## Usage
@@ -186,13 +193,16 @@ The configuration options available are:
 
 - `inherited_members`: true or false (default). When enabled, inherited members will be selected as well.
 
-- `docstring_style`: the docstring style to use when parsing the docstring. Only one parser available: `google`.
+- `docstring_style`: the docstring style to use when parsing the docstring. `google` and `restructured-text`<sup>1</sup>.
 
 - `docstring_options`: options to pass to the docstring parser.
     - `google` accepts a `replace_admonitions` boolean option (default: true). When enabled, this option will
       replace titles of an indented block by their Markdown admonition equivalent:
       `AdmonitionType: Title` will become `!!! admonitiontype "Title"`.
-    
+    - `restructured-text` does not accept any options.
+
+<sup>1</sup>: reStructured Text parsing is in active development and is not feature complete yet.
+
 ### Details on `new_path_syntax`
 
 Example:

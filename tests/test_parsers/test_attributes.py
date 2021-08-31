@@ -1,8 +1,7 @@
 """Tests for [the `parsers.attributes` module][pytkdocs.parsers.attributes]."""
 
-from tests.fixtures.parsing import attributes as attr_module
-
 from pytkdocs.parsers.attributes import get_class_attributes, get_instance_attributes, get_module_attributes
+from tests.fixtures.parsing import attributes as attr_module
 
 
 class TestParsing:
@@ -75,6 +74,9 @@ class TestModuleAttributes:
         assert "IN_FINALLY" in self.attributes
         assert self.attributes["IN_FINALLY"]["docstring"] == "In finally."
 
+    def test_docstring_is_correctly_dedented(self):
+        assert "\n    " not in self.attributes["DEDENT"]["docstring"]
+
 
 class TestClassAttributes:
     """Test the parser for module attributes."""
@@ -87,6 +89,9 @@ class TestClassAttributes:
         """Pick up class attribute."""
         assert "IN_CLASS" in self.attributes
         assert self.attributes["IN_CLASS"]["docstring"] == "In class."
+
+    def test_docstring_is_correctly_dedented(self):
+        assert "\n    " not in self.attributes["DEDENT"]["docstring"]
 
 
 class TestInstanceAttributes:
@@ -113,6 +118,9 @@ class TestInstanceAttributes:
         assert "d" not in self.attributes
         assert "d.subscript" not in self.attributes
         assert "subscript" not in self.attributes
+
+    def test_docstring_is_correctly_dedented(self):
+        assert "\n    " not in self.attributes["dedent"]["docstring"]
 
 
 class TestPydanticFields:

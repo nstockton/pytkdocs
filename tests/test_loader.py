@@ -3,12 +3,14 @@
 import os
 import sys
 from pathlib import Path
+from typing import Set
 
 import pytest
+from django.db.models.fields import CharField
 from marshmallow import fields
-from tests import FIXTURES_DIR
 
 from pytkdocs.loader import Loader, get_object_tree
+from tests import FIXTURES_DIR
 
 
 def test_import_no_path():
@@ -174,6 +176,7 @@ def test_loading_class():
     loader = Loader()
     obj = loader.get_object_documentation("tests.fixtures.the_package.the_module.TheClass")
     assert obj.docstring == "The class docstring."
+    assert obj.bases == ["object"]
 
 
 def test_loading_class_with_multiline_docstring_starting_on_first_line():
@@ -223,6 +226,20 @@ def test_loading_pydantic_model():
     assert age_attr.type == int
     assert age_attr.docstring == "The person's age which must be at minimum 18"
     assert "pydantic-field" in age_attr.properties
+    labels_attr = next(attr for attr in obj.attributes if attr.name == "labels")
+    assert labels_attr.type == Set[str]
+    assert labels_attr.docstring == "Set of labels the person can be referred by"
+    assert "pydantic-field" in labels_attr.properties
+
+
+def test_loading_django_model():
+    """Handle Django models"""
+    loader = Loader()
+    obj = loader.get_object_documentation("tests.fixtures.django.Person")
+    assert obj.docstring == "Simple Django Model for a person's information"
+    name_attr = next(attr for attr in obj.attributes if attr.name == "name")
+    assert name_attr.type == CharField
+    assert name_attr.docstring == "Name"
 
 
 def test_loading_marshmallow_model():
@@ -488,3 +505,43 @@ def test_loading_method_without_async_property():
     loader = Loader()
     obj = loader.get_object_documentation("tests.fixtures.the_package.the_module.TheClass.the_method")
     assert "async" not in obj.properties
+
+
+def test_inherited_properties_docstrings():
+    """Load docstrings from parent class for inherited properties."""
+    loader = Loader(new_path_syntax=True)
+    obj = loader.get_object_documentation("tests.fixtures.inherited_properties:SubClass.read_only")
+    assert obj.docstring == "SuperClass.read_only docs"
+    obj = loader.get_object_documentation("tests.fixtures.inherited_properties:SubClass.mutable")
+    assert obj.docstring == "SuperClass.mutable getter docs"
+
+
+def test_loading_cached_properties():
+    """Load cached properties."""
+    loader = Loader(new_path_syntax=True)
+    obj = loader.get_object_documentation("tests.fixtures.cached_properties:C")
+    assert len(obj.children) == 1
+    assert obj.children[0].name == obj.children[0].docstring == "aaa"
+    assert "cached" in obj.children[0].properties
+
+
+def test_method_descriptor():
+    """Load a method descriptor."""
+    loader = Loader(new_path_syntax=True)
+    obj = loader.get_object_documentation("tests.fixtures.method_descriptor:descriptor")
+    assert obj.name == "descriptor"
+    assert obj.signature
+    assert len(obj.signature.parameters) == 2
+    assert obj.docstring
+    assert obj.category == "method"
+
+
+def test_load_decorated_function():
+    """Load a decorated function."""
+    loader = Loader(new_path_syntax=True)
+    obj = loader.get_object_documentation("tests.fixtures.decorated_function")
+    assert [child.name for child in obj.children] == ["add", "sub"]
+    for child in obj.children:
+        assert child.category == "function"
+        assert child.parent is child.root
+        assert child.parent.name == "decorated_function"

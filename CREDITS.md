@@ -12,7 +12,9 @@ These projects were used to build `pytkdocs`. **Thank you!**
 ### Direct dependencies
 [`autoflake`](https://github.com/myint/autoflake) |
 [`black`](https://github.com/psf/black) |
+[`cached-property`](https://github.com/pydanny/cached-property) |
 [`dataclasses`](https://github.com/ericvsmith/dataclasses) |
+[`docstring_parser`]() |
 [`duty`](https://github.com/pawamoy/duty) |
 [`flake8-black`](https://github.com/peterjc/flake8-black) |
 [`flake8-builtins`](https://github.com/gforcada/flake8-builtins) |
@@ -52,7 +54,6 @@ These projects were used to build `pytkdocs`. **Thank you!**
 [`attrs`](https://www.attrs.org/) |
 [`backcall`](https://github.com/takluyver/backcall) |
 [`bandit`](https://bandit.readthedocs.io/en/latest/) |
-[`beautifulsoup4`](http://www.crummy.com/software/BeautifulSoup/bs4/) |
 [`certifi`](https://certifiio.readthedocs.io/en/latest/) |
 [`chardet`](https://github.com/chardet/chardet) |
 [`click`](https://palletsprojects.com/p/click/) |
@@ -61,6 +62,7 @@ These projects were used to build `pytkdocs`. **Thank you!**
 [`coverage`](https://github.com/nedbat/coveragepy) |
 [`darglint`](None) |
 [`decorator`](https://github.com/micheles/decorator) |
+[`docstring-parser`](https://github.com/rr-/docstring_parser) |
 [`docutils`](http://docutils.sourceforge.net/) |
 [`entrypoints`](https://github.com/takluyver/entrypoints) |
 [`eradicate`](https://github.com/myint/eradicate) |
@@ -122,7 +124,7 @@ These projects were used to build `pytkdocs`. **Thank you!**
 [`pymdown-extensions`](https://github.com/facelessuser/pymdown-extensions) |
 [`pyparsing`](https://github.com/pyparsing/pyparsing/) |
 [`pytest-forked`](https://github.com/pytest-dev/pytest-forked) |
-[`PyYAML`](https://github.com/yaml/pyyaml) |
+[`PyYAML`](https://pyyaml.org/) |
 [`regex`](https://bitbucket.org/mrabarnett/mrab-regex) |
 [`restructuredtext-lint`](https://github.com/twolfson/restructuredtext-lint) |
 [`rfc3986`](http://rfc3986.readthedocs.io) |
@@ -130,7 +132,6 @@ These projects were used to build `pytkdocs`. **Thank you!**
 [`smmap`](https://github.com/gitpython-developers/smmap) |
 [`sniffio`](https://github.com/python-trio/sniffio) |
 [`snowballstemmer`](https://github.com/snowballstem/snowball) |
-[`soupsieve`](https://github.com/facelessuser/soupsieve) |
 [`stevedore`](https://docs.openstack.org/stevedore/latest/) |
 [`termcolor`](http://pypi.python.org/pypi/termcolor) |
 [`testfixtures`](https://github.com/Simplistix/testfixtures) |

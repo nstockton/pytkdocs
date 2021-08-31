@@ -17,39 +17,37 @@ make setup
 !!! note
     If it fails for some reason,
     you'll need to install
-    [Poetry](https://github.com/python-poetry/poetry)
+    [PDM](https://github.com/pdm-project/pdm)
     manually.
 
     You can install it with:
 
     ```bash
     python3 -m pip install --user pipx
-    pipx install poetry
+    pipx install pdm
     ```
 
     Now you can try running `make setup` again,
-    or simply `poetry install`.
+    or simply `pdm install`.
 
 You now have the dependencies installed.
 
-You can run the application with `poetry run pytkdocs [ARGS...]`.
+You can run the application with `pdm run pytkdocs [ARGS...]`.
 
 Run `make help` to see all the available actions!
 
 ## Tasks
 
-This project uses [Duty](https://github.com/pawamoy/duty) to run tasks.
+This project uses [duty](https://github.com/pawamoy/duty) to run tasks.
 A Makefile is also provided. The Makefile will try to run certain tasks
 on multiple Python versions. If for some reason you don't want to run the task
 on multiple Python versions, you can do one of the following:
 
 1. `export PYTHON_VERSIONS= `: this will run the task
    with only the current Python version
-2. run the task directly with `poetry run duty TASK`,
-   or `duty TASK` if the environment was already activated
-   through `poetry shell`
+2. run the task directly with `pdm run duty TASK`
 
-The Makefile detects if the Poetry environment is activated,
+The Makefile detects if a virtual environment is activated,
 so `make` will work the same with the virtualenv activated or not.
 
 ## Development

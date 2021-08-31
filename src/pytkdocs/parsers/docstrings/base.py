@@ -110,6 +110,7 @@ class Section:
         RETURN = "return"
         EXAMPLES = "examples"
         ATTRIBUTES = "attributes"
+        KEYWORD_ARGS = "keyword_args"
 
     def __init__(self, section_type: str, value: Any) -> None:
         """
@@ -188,3 +189,18 @@ class Parser(metaclass=ABCMeta):
             A list of [`Section`][pytkdocs.parsers.docstrings.base.Section]s.
         """
         raise NotImplementedError
+
+
+class UnavailableParser:
+    def __init__(self, message):
+        self.message = message
+
+    def parse(self, docstring: str, context: Optional[dict] = None) -> Tuple[List[Section], List[str]]:
+        context = context or {}
+        message = self.message
+        if "obj" in context:
+            message = f"{context['obj'].path}: {message}"
+        return [], [message]
+
+    def __call__(self, *args, **kwargs):
+        return self

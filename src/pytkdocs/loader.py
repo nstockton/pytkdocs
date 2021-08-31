@@ -12,13 +12,19 @@ import re
 import warnings
 from functools import lru_cache
 from itertools import chain
+from operator import attrgetter
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Mapping, Optional, Set, Tuple, Union
 
 from pytkdocs.objects import Attribute, Class, Function, Method, Module, Object, Source
 from pytkdocs.parsers.attributes import get_class_attributes, get_instance_attributes, get_module_attributes, merge
 from pytkdocs.parsers.docstrings import PARSERS
 from pytkdocs.properties import RE_SPECIAL
+
+try:
+    from functools import cached_property  # type: ignore
+except ImportError:
+    from cached_property import cached_property  # type: ignore
 
 
 class ObjectNode:
@@ -138,7 +144,16 @@ class ObjectNode:
         Returns:
             If this node's object is a property.
         """
-        return isinstance(self.obj, property)
+        return isinstance(self.obj, property) or self.is_cached_property()
+
+    def is_cached_property(self) -> bool:
+        """
+        Tell if this node's object is a cached property.
+
+        Returns:
+            If this node's object is a cached property.
+        """
+        return isinstance(self.obj, cached_property)
 
     def parent_is_class(self) -> bool:
         """
@@ -158,6 +173,18 @@ class ObjectNode:
         """
         function_type = type(lambda: None)
         return self.parent_is_class() and isinstance(self.obj, function_type)
+
+    def is_method_descriptor(self) -> bool:
+        """
+        Tell if this node's object is a method descriptor.
+
+        Built-in methods (e.g. those implemented in C/Rust) are often
+        method descriptors, rather than normal methods.
+
+        Returns:
+            If this node's object is a method descriptor.
+        """
+        return inspect.ismethoddescriptor(self.obj)
 
     def is_staticmethod(self) -> bool:
         """
@@ -346,6 +373,8 @@ class Loader:
             root_object = self.get_staticmethod_documentation(leaf)
         elif leaf.is_classmethod():
             root_object = self.get_classmethod_documentation(leaf)
+        elif leaf.is_method_descriptor():
+            root_object = self.get_regular_method_documentation(leaf)
         elif leaf.is_method():
             root_object = self.get_regular_method_documentation(leaf)
         elif leaf.is_function():
@@ -405,9 +434,9 @@ class Loader:
         for member_name, member in inspect.getmembers(module):
             if self.select(member_name, select_members):  # type: ignore
                 child_node = ObjectNode(member, member_name, parent=node)
-                if child_node.is_class() and node.root.obj is inspect.getmodule(member):
+                if child_node.is_class() and node.root.obj is inspect.getmodule(child_node.obj):
                     root_object.add_child(self.get_class_documentation(child_node))
-                elif child_node.is_function() and node.root.obj is inspect.getmodule(member):
+                elif child_node.is_function() and node.root.obj is inspect.getmodule(child_node.obj):
                     root_object.add_child(self.get_function_documentation(child_node))
                 elif member_name in attributes_data:
                     root_object.add_child(self.get_attribute_documentation(child_node, attributes_data[member_name]))
@@ -419,6 +448,15 @@ class Loader:
                     root_object.add_child(self.get_module_documentation(leaf))
 
         return root_object
+
+    @staticmethod
+    def _class_path(cls):
+        mod = cls.__module__
+        qname = cls.__qualname__
+        if mod == "builtins":
+            return qname
+        else:
+            return f"{mod}.{qname}"
 
     def get_class_documentation(self, node: ObjectNode, select_members=None) -> Class:
         """
@@ -433,7 +471,10 @@ class Loader:
         """
         class_ = node.obj
         docstring = inspect.cleandoc(class_.__doc__ or "")
-        root_object = Class(name=node.name, path=node.dotted_path, file_path=node.file_path, docstring=docstring)
+        bases = [self._class_path(b) for b in class_.__bases__]
+        root_object = Class(
+            name=node.name, path=node.dotted_path, file_path=node.file_path, docstring=docstring, bases=bases
+        )
 
         # Even if we don't select members, we want to correctly parse the docstring
         attributes_data: Dict[str, Dict[str, Any]] = {}
@@ -494,6 +535,7 @@ class Loader:
         for attr_name, properties, add_method in (
             ("__fields__", ["pydantic-model"], self.get_pydantic_field_documentation),
             ("_declared_fields", ["marshmallow-model"], self.get_marshmallow_field_documentation),
+            ("_meta.get_fields", ["django-model"], self.get_django_field_documentation),
             ("__dataclass_fields__", ["dataclass"], self.get_annotated_dataclass_field),
         ):
             if self.detect_field_model(attr_name, direct_members, all_members):
@@ -516,14 +558,24 @@ class Loader:
         Detect if an attribute is present in members.
 
         Arguments:
-            attr_name: The name of the attribute to detect.
+            attr_name: The name of the attribute to detect, can contain dots.
             direct_members: The direct members of the class.
             all_members: All members of the class.
 
         Returns:
             Whether the attribute is present.
         """
-        return attr_name in direct_members or (self.select_inherited_members and attr_name in all_members)
+
+        first_order_attr_name, remainder = split_attr_name(attr_name)
+        if not (
+            first_order_attr_name in direct_members
+            or (self.select_inherited_members and first_order_attr_name in all_members)
+        ):
+            return False
+
+        if remainder and not attrgetter(remainder)(all_members[first_order_attr_name]):
+            return False
+        return True
 
     def add_fields(
         self,
@@ -547,7 +599,10 @@ class Loader:
             base_class: The class declaring the fields.
             add_method: The method to add the children object.
         """
-        for field_name, field in members[attr_name].items():
+
+        fields = get_fields(attr_name, members=members)
+
+        for field_name, field in fields.items():
             select_field = self.select(field_name, select_members)  # type: ignore
             is_inherited = field_is_inherited(field_name, attr_name, base_class)
 
@@ -598,21 +653,29 @@ class Loader:
 
     def get_property_documentation(self, node: ObjectNode) -> Attribute:
         """
-        Get the documentation for an attribute.
+        Get the documentation for a property.
 
         Arguments:
-            node: The node representing the attribute and its parents.
+            node: The node representing the property and its parents.
 
         Returns:
-            The documented attribute object.
+            The documented attribute object (properties are considered attributes for now).
         """
         prop = node.obj
         path = node.dotted_path
-        properties = ["property", "readonly" if prop.fset is None else "writable"]
+        properties = ["property"]
+        if node.is_cached_property():
+            # cached_property is always writable, see the docs
+            properties.extend(["writable", "cached"])
+            sig_source_func = prop.func
+        else:
+            properties.append("readonly" if prop.fset is None else "writable")
+            sig_source_func = prop.fget
+
         source: Optional[Source]
 
         try:
-            signature = inspect.signature(prop.fget)
+            signature = inspect.signature(sig_source_func)
         except (TypeError, ValueError) as error:
             self.errors.append(f"Couldn't get signature for '{path}': {error}")
             attr_type = None
@@ -620,7 +683,7 @@ class Loader:
             attr_type = signature.return_annotation
 
         try:
-            source = Source(*inspect.getsourcelines(prop.fget))
+            source = Source(*inspect.getsourcelines(sig_source_func))
         except (OSError, TypeError) as error:
             self.errors.append(f"Couldn't get source for '{path}': {error}")
             source = None
@@ -629,7 +692,7 @@ class Loader:
             name=node.name,
             path=path,
             file_path=node.file_path,
-            docstring=inspect.getdoc(prop.fget),
+            docstring=inspect.getdoc(prop),
             attr_type=attr_type,
             properties=properties,
             source=source,
@@ -657,7 +720,36 @@ class Loader:
             path=path,
             file_path=node.file_path,
             docstring=prop.field_info.description,
-            attr_type=prop.type_,
+            attr_type=prop.outer_type_,
+            properties=properties,
+        )
+
+    @staticmethod
+    def get_django_field_documentation(node: ObjectNode) -> Attribute:
+        """
+        Get the documentation for a Django Field.
+
+        Arguments:
+            node: The node representing the Field and its parents.
+
+        Returns:
+            The documented attribute object.
+        """
+        prop = node.obj
+        path = node.dotted_path
+        properties = ["django-field"]
+
+        if prop.null:
+            properties.append("nullable")
+        if prop.blank:
+            properties.append("blank")
+
+        return Attribute(
+            name=node.name,
+            path=path,
+            file_path=node.file_path,
+            docstring=prop.verbose_name,
+            attr_type=prop.__class__,
             properties=properties,
         )
 
@@ -770,7 +862,7 @@ class Loader:
 
     def get_method_documentation(self, node: ObjectNode, properties: Optional[List[str]] = None) -> Method:
         """
-        Get the documentation for a method.
+        Get the documentation for a method or method descriptor.
 
         Arguments:
             node: The node representing the method and its parents.
@@ -781,6 +873,7 @@ class Loader:
         """
         method = node.obj
         path = node.dotted_path
+        signature: Optional[inspect.Signature]
         source: Optional[Source]
 
         try:
@@ -797,12 +890,23 @@ class Loader:
             else:
                 properties.append("async")
 
+        try:
+            # for "built-in" functions, e.g. those implemented in C,
+            # inspect.signature() uses the __text_signature__ attribute, which
+            # provides a limited but still useful amount of signature information.
+            # "built-in" functions with no __text_signature__ will
+            # raise a ValueError().
+            signature = inspect.signature(method)
+        except ValueError as error:
+            self.errors.append(f"Couldn't read signature for '{path}': {error}")
+            signature = None
+
         return Method(
             name=node.name,
             path=path,
             file_path=node.file_path,
             docstring=inspect.getdoc(method),
-            signature=inspect.signature(method),
+            signature=signature,
             properties=properties or [],
             source=source,
         )
@@ -891,3 +995,39 @@ def field_is_inherited(field_name: str, fields_name: str, base_class: type) -> b
             *(getattr(parent_class, fields_name, {}).keys() for parent_class in base_class.__mro__[1:-1]),
         ),
     )
+
+
+def split_attr_name(attr_name: str) -> Tuple[str, Optional[str]]:
+    """
+    Split an attribute name into a first-order attribute name and remainder.
+
+    Args:
+        attr_name: Attribute name (a)
+
+    Returns:
+        Tuple containing:
+            first_order_attr_name: Name of the first order attribute (a)
+            remainder: The remainder (b.c)
+
+    """
+    first_order_attr_name, *remaining = attr_name.split(".", maxsplit=1)
+    remainder = remaining[0] if remaining else None
+    return first_order_attr_name, remainder
+
+
+def get_fields(attr_name: str, *, members: Mapping[str, Any] = None, class_obj=None) -> Dict[str, Any]:
+    if not (bool(members) ^ bool(class_obj)):
+        raise ValueError("Either members or class_obj is required.")
+    first_order_attr_name, remainder = split_attr_name(attr_name)
+    fields = members[first_order_attr_name] if members else dict(vars(class_obj)).get(first_order_attr_name, {})
+    if remainder:
+        fields = attrgetter(remainder)(fields)
+
+    if callable(fields):
+        fields = fields()
+
+    if not isinstance(fields, dict):
+        # Support Django models
+        fields = {getattr(f, "name", str(f)): f for f in fields if not getattr(f, "auto_created", False)}
+
+    return fields

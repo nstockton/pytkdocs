@@ -108,6 +108,7 @@ class Section:
         PARAMETERS = "parameters"
         EXCEPTIONS = "exceptions"
         RETURN = "return"
+        YIELD = "yield"
         EXAMPLES = "examples"
         ATTRIBUTES = "attributes"
         KEYWORD_ARGS = "keyword_args"

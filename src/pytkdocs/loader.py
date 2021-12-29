@@ -9,7 +9,6 @@ import importlib
 import inspect
 import pkgutil
 import re
-import warnings
 from functools import lru_cache
 from itertools import chain
 from operator import attrgetter
@@ -336,16 +335,6 @@ class Loader:
         self.select_inherited_members = inherited_members
         self.new_path_syntax = new_path_syntax
 
-        if not new_path_syntax:
-            warnings.warn(
-                "With pytkdocs v0.9, the 'new_path_syntax` option was introduced. "
-                "The default value is False, but will become True in v0.11, "
-                "and the option will be removed in v0.13. "
-                "Please update your paths to use a colon to delimit modules from other objects. "
-                "Read more at https://pawamoy.github.io/pytkdocs/#details-on-new_path_syntax",
-                PendingDeprecationWarning,
-            )
-
     def get_object_documentation(self, dotted_path: str, members: Optional[Union[Set[str], bool]] = None) -> Object:
         """
         Get the documentation for an object and its children.
@@ -410,7 +399,6 @@ class Loader:
             try:
                 code = Path(node.file_path).read_text()
             except (OSError, UnicodeDecodeError):
-                self.errors.append(f"Couldn't read source for '{path}': {error}")
                 source = None
             else:
                 source = Source(code, 1) if code else None
@@ -432,7 +420,7 @@ class Loader:
         root_object.parse_docstring(self.docstring_parser, attributes=attributes_data)
 
         for member_name, member in inspect.getmembers(module):
-            if self.select(member_name, select_members):  # type: ignore
+            if self.select(member_name, select_members):
                 child_node = ObjectNode(member, member_name, parent=node)
                 if child_node.is_class() and node.root.obj is inspect.getmodule(child_node.obj):
                     root_object.add_child(self.get_class_documentation(child_node))
@@ -472,8 +460,21 @@ class Loader:
         class_ = node.obj
         docstring = inspect.cleandoc(class_.__doc__ or "")
         bases = [self._class_path(b) for b in class_.__bases__]
+
+        source: Optional[Source]
+
+        try:
+            source = Source(*inspect.getsourcelines(node.obj))
+        except (OSError, TypeError) as error:
+            source = None
+
         root_object = Class(
-            name=node.name, path=node.dotted_path, file_path=node.file_path, docstring=docstring, bases=bases
+            name=node.name,
+            path=node.dotted_path,
+            file_path=node.file_path,
+            docstring=docstring,
+            bases=bases,
+            source=source,
         )
 
         # Even if we don't select members, we want to correctly parse the docstring
@@ -487,7 +488,7 @@ class Loader:
                 context["signature"] = inspect.signature(class_.__init__)
             except (TypeError, ValueError):
                 pass
-        root_object.parse_docstring(self.docstring_parser, attributes=attributes_data)
+        root_object.parse_docstring(self.docstring_parser, **context)
 
         if select_members is False:
             return root_object
@@ -603,7 +604,7 @@ class Loader:
         fields = get_fields(attr_name, members=members)
 
         for field_name, field in fields.items():
-            select_field = self.select(field_name, select_members)  # type: ignore
+            select_field = self.select(field_name, select_members)
             is_inherited = field_is_inherited(field_name, attr_name, base_class)
 
             if select_field and (self.select_inherited_members or not is_inherited):
@@ -628,13 +629,11 @@ class Loader:
         try:
             signature = inspect.signature(function)
         except TypeError as error:
-            self.errors.append(f"Couldn't get signature for '{path}': {error}")
             signature = None
 
         try:
             source = Source(*inspect.getsourcelines(function))
         except OSError as error:
-            self.errors.append(f"Couldn't read source for '{path}': {error}")
             source = None
 
         properties: List[str] = []
@@ -677,7 +676,6 @@ class Loader:
         try:
             signature = inspect.signature(sig_source_func)
         except (TypeError, ValueError) as error:
-            self.errors.append(f"Couldn't get signature for '{path}': {error}")
             attr_type = None
         else:
             attr_type = signature.return_annotation
@@ -685,7 +683,6 @@ class Loader:
         try:
             source = Source(*inspect.getsourcelines(sig_source_func))
         except (OSError, TypeError) as error:
-            self.errors.append(f"Couldn't get source for '{path}': {error}")
             source = None
 
         return Attribute(
@@ -744,11 +741,19 @@ class Loader:
         if prop.blank:
             properties.append("blank")
 
+        # set correct docstring based on verbose_name and help_text
+        # both should be converted to str type in case lazy translation
+        # is being used, which is common scenario in django
+        if prop.help_text:
+            docstring = f"{prop.verbose_name}: {prop.help_text}"
+        else:
+            docstring = str(prop.verbose_name)
+
         return Attribute(
             name=node.name,
             path=path,
             file_path=node.file_path,
-            docstring=prop.verbose_name,
+            docstring=docstring,
             attr_type=prop.__class__,
             properties=properties,
         )
@@ -879,7 +884,6 @@ class Loader:
         try:
             source = Source(*inspect.getsourcelines(method))
         except OSError as error:
-            self.errors.append(f"Couldn't read source for '{path}': {error}")
             source = None
         except TypeError:
             source = None
@@ -898,7 +902,6 @@ class Loader:
             # raise a ValueError().
             signature = inspect.signature(method)
         except ValueError as error:
-            self.errors.append(f"Couldn't read signature for '{path}': {error}")
             signature = None
 
         return Method(

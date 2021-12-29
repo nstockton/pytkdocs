@@ -5,6 +5,76 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
+## [0.15.0](https://github.com/mkdocstrings/pytkdocs/releases/tag/0.15.0) - 2021-12-27
+
+<small>[Compare with 0.14.2](https://github.com/mkdocstrings/pytkdocs/compare/0.14.2...0.15.0)</small>
+
+### Features
+- Add support for `help_text` field parameter as docstring for django model fields ([01ac524](https://github.com/mkdocstrings/pytkdocs/commit/01ac524a1d353aa816adbb4ee46731451b58db37) by mabugaj). References: [#127](https://github.com/mkdocstrings/pytkdocs/issues/127), [#129](https://github.com/mkdocstrings/pytkdocs/issues/129)
+
+
+## [0.14.2](https://github.com/mkdocstrings/pytkdocs/releases/tag/0.14.2) - 2021-12-16
+
+<small>[Compare with 0.14.1](https://github.com/mkdocstrings/pytkdocs/compare/0.14.1...0.14.2)</small>
+
+### Dependencies
+- Remove upper bounds on production dependencies ([22ff7df](https://github.com/mkdocstrings/pytkdocs/commit/22ff7df70361bc460ba3b92bfba51d90481112fd) by Timothée Mazzucotelli). [Issue #124](https://github.com/mkdocstrings/pytkdocs/issues/124), [PR #128](https://github.com/mkdocstrings/pytkdocs/pull/128)
+
+
+## [0.14.1](https://github.com/mkdocstrings/pytkdocs/releases/tag/0.14.1) - 2021-12-16
+
+<small>[Compare with 0.14.0](https://github.com/mkdocstrings/pytkdocs/compare/0.14.0...0.14.1)</small>
+
+### Code Refactoring
+- Remove upper bounds on development dependencies ([e1a4eba](https://github.com/mkdocstrings/pytkdocs/commit/e1a4eba87b2253024eea5fb68510aa6cda1d9f1c) by Timothée Mazzucotelli). [PR #126](https://github.com/mkdocstrings/pytkdocs/pull/126). See https://iscinumpy.dev/post/bound-version-constraints/.
+
+
+## [0.14.0](https://github.com/mkdocstrings/pytkdocs/releases/tag/0.14.0) - 2021-10-08
+
+<small>[Compare with 0.13.0](https://github.com/mkdocstrings/pytkdocs/compare/0.13.0...0.14.0)</small>
+
+### Features
+- Add Markdown docstring-style support ([06556e3](https://github.com/mkdocstrings/pytkdocs/commit/06556e37634e0c520b28fa323d8d4ea459c32892) by Timothée Mazzucotelli). [PR #121](https://github.com/mkdocstrings/pytkdocs/pull/121)
+
+### Bug Fixes
+- Serialize yields and keyword arguments sections ([8fb86d6](https://github.com/mkdocstrings/pytkdocs/commit/8fb86d6777f11ff9ead322b901106d1e5a6d4741) by Timothée Mazzucotelli).
+
+
+## [0.13.0](https://github.com/mkdocstrings/pytkdocs/releases/tag/0.13.0) - 2021-10-06
+
+<small>[Compare with 0.12.0](https://github.com/mkdocstrings/pytkdocs/compare/0.12.0...0.13.0)</small>
+
+### Features
+- Support google yields sections ([4b99cbc](https://github.com/mkdocstrings/pytkdocs/commit/4b99cbc7192ab4a1093237a1c79fdf8d70c39b6b) by Timothée Mazzucotelli). [Issue #89](https://github.com/mkdocstrings/pytkdocs/issues/89), [PR #116](https://github.com/mkdocstrings/pytkdocs/pull/116)
+
+### Bug Fixes
+- Add source to class objects ([8931df8](https://github.com/mkdocstrings/pytkdocs/commit/8931df8f7ef9c98d2a36efcee09339d012a08157) by jakekaplan). [PR #120](https://github.com/mkdocstrings/pytkdocs/pull/120)
+- Pass context when parsing class docstring ([4a62039](https://github.com/mkdocstrings/pytkdocs/commit/4a6203926e1ad42c0cc9652f1e42b1570d193564) by jakekaplan).[PR #118](https://github.com/mkdocstrings/pytkdocs/pull/118)
+- Don't mistakenly return a 'missing annotation' error ([4afc97f](https://github.com/mkdocstrings/pytkdocs/commit/4afc97f912472e9a29931d09feb88d07376b4afd) by Timothée Mazzucotelli).
+
+### Code Refactoring
+- Set keyword-only kind on keyword arguments ([c5c2ef0](https://github.com/mkdocstrings/pytkdocs/commit/c5c2ef0655bce35fe8df4d8f2674701fc8086c48) by Timothée Mazzucotelli).
+
+
+## [0.12.0](https://github.com/mkdocstrings/pytkdocs/releases/tag/0.12.0) - 2021-09-21
+
+<small>[Compare with 0.11.1](https://github.com/mkdocstrings/pytkdocs/compare/0.11.1...0.12.0)</small>
+
+### Features
+- Include base classes in output ([f7f6652](https://github.com/mkdocstrings/pytkdocs/commit/f7f6652f5b796c37980cc6b68865b2441a469ebd) by Brian Koropoff). [Issue mkdocstrings#269](https://github.com/mkdocstrings/mkdocstrings/issues/269), [PR #108](https://github.com/mkdocstrings/pytkdocs/pull/108)
+- Support "Keyword Args" sections for Gooogle-style ([0133369](https://github.com/mkdocstrings/pytkdocs/commit/013336970029edc0ff95a025007492786d77ed9c) by HacKan). [Issue #88](https://github.com/mkdocstrings/pytkdocs/issues/88), [PR #105](https://github.com/mkdocstrings/pytkdocs/pull/105)
+- Allow method descriptors to be serialized as methods ([8e1b1b2](https://github.com/mkdocstrings/pytkdocs/commit/8e1b1b2375070ab5b01757c686da4bbde3a771cd) by jmrgibson). [PR #103](https://github.com/mkdocstrings/pytkdocs/pull/103)
+- Add support for Django models ([6416a05](https://github.com/mkdocstrings/pytkdocs/commit/6416a05c080d2f15206b26d641cd7d5ca18af316) by Michał Rokita). [Issue #39](https://github.com/mkdocstrings/pytkdocs/issues/39), [PR #101](https://github.com/mkdocstrings/pytkdocs/pull/101)
+
+### Bug Fixes
+- Fix getting parent module of decorated functions ([88b457f](https://github.com/mkdocstrings/pytkdocs/commit/88b457f8aae51a422470d6c34859439d97b110e0) by Timothée Mazzucotelli). [Issue mkdocstrings#162](https://github.com/mkdocstrings/mkdocstrings/issues/162), [PR #109](https://github.com/mkdocstrings/pytkdocs/pull/109)
+
+### Code Refactoring
+- Stop recording errors in the loader ([3191bac](https://github.com/mkdocstrings/pytkdocs/commit/3191bac307a85f8c1e108eea5c7ee72bd50c8803) by Timothée Mazzucotelli). [Issue #111](https://github.com/mkdocstrings/pytkdocs/issues/111), [PR #114](https://github.com/mkdocstrings/pytkdocs/pull/114)
+- Remove warning about new path style option ([14b18be](https://github.com/mkdocstrings/pytkdocs/commit/14b18beb2116564c1ad2c1bb3b1f2316d813a7c7) by Timothée Mazzucotelli).
+- Switch preference order between annotation and docstring type ([c4f6bdc](https://github.com/mkdocstrings/pytkdocs/commit/c4f6bdc8136497eeca43583c04fa72d9d316df4b) by Andy Challis, and [75b4024](https://github.com/mkdocstrings/pytkdocs/commit/75b40247a4002823cdc2505cc864a70db745950e) by Timothée Mazzucotelli). [Issue mkdocstrings#143](https://github.com/mkdocstrings/mkdocstrings/issues/143), [PR #110](https://github.com/mkdocstrings/pytkdocs/pull/110)
+
+
 ## [0.11.1](https://github.com/mkdocstrings/pytkdocs/releases/tag/0.11.1) - 2021-04-03
 
 <small>[Compare with 0.11.0](https://github.com/mkdocstrings/pytkdocs/compare/0.11.0...0.11.1)</small>

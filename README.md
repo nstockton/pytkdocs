@@ -4,16 +4,17 @@
 [![documentation](https://img.shields.io/badge/docs-mkdocs%20material-blue.svg?style=flat)](https://pawamoy.github.io/pytkdocs/)
 [![pypi version](https://img.shields.io/pypi/v/pytkdocs.svg)](https://pypi.org/project/pytkdocs/)
 [![conda version](https://img.shields.io/conda/vn/conda-forge/pytkdocs)](https://anaconda.org/conda-forge/pytkdocs)
+[![gitpod](https://img.shields.io/badge/gitpod-workspace-blue.svg?style=flat)](https://gitpod.io/#https://github.com/pawamoy/pytkdocs)
 [![gitter](https://badges.gitter.im/join%20chat.svg)](https://gitter.im/pytkdocs/community)
 
 Load Python objects documentation.
 
 ## Requirements
 
-`pytkdocs` requires Python 3.6 or above.
+pytkdocs requires Python 3.7 or above.
 
 <details>
-<summary>To install Python 3.6, I recommend using <a href="https://github.com/pyenv/pyenv"><code>pyenv</code></a>.</summary>
+<summary>To install Python 3.7, I recommend using <a href="https://github.com/pyenv/pyenv"><code>pyenv</code></a>.</summary>
 
 ```bash
 # install pyenv
@@ -24,11 +25,11 @@ export PATH="${HOME}/.pyenv/bin:${PATH}"
 export PYENV_ROOT="${HOME}/.pyenv"
 eval "$(pyenv init -)"
 
-# install Python 3.6
-pyenv install 3.6.12
+# install Python 3.7
+pyenv install 3.7.12
 
 # make it available globally
-pyenv global system 3.6.12
+pyenv global system 3.7.12
 ```
 </details>
 
@@ -36,14 +37,13 @@ pyenv global system 3.6.12
 
 With `pip`:
 ```bash
-python3.6 -m pip install pytkdocs
+pip install pytkdocs
 ```
 
 With [`pipx`](https://github.com/pipxproject/pipx):
 ```bash
-python3.6 -m pip install --user pipx
-
-pipx install --python python3.6 pytkdocs
+python3.7 -m pip install --user pipx
+pipx install pytkdocs
 ```
 
 With `conda`:
@@ -204,6 +204,7 @@ The configuration options available are:
 
 <sup>1</sup>: reStructured Text parsing is in active development and is not feature complete yet.
 <sup>2</sup>: The following sections are currently not supported : `Notes`, `See Also`, `Warns` and `References`.
+
 ### Details on `new_path_syntax`
 
 Example:
@@ -225,19 +226,3 @@ Example:
   old importing behavior.
 - If there isn't a colon, and `new_path_syntax` is true, `pytkdocs` uses the new
   importing behavior and therefore considers that the path points to a module.
-
-!!! warning "The `new_path_syntax` option is temporary."
-    It exists only to ease the transition to the new path syntax.
-    
-    Here is an idea of its life time:
-    
-    - **version 0.9:** the default value for `new_path_syntax` is false.
-      A pending deprecation warning is emmitted to tell users to switch to the new path syntax.
-    - **once version 0.10 is published:** [`mkdocstrings`](https://github.com/pawamoy/mkdocstrings)
-      will log an MkDocs warning, making the builds fail
-      when `new_path_syntax` is false and strict mode is enabled.
-    - **version 0.11:** the default value for `new_path_syntax` becomes true,
-      and the warning becomes a deprecation warning.
-    - **version 0.13:** the `new_path_syntax` option is removed.
-    
-    Please update your paths to use the new colon syntax as soon as possible.

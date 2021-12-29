@@ -2,6 +2,7 @@
 
 import inspect
 from textwrap import dedent
+from typing import Iterator
 
 from pytkdocs.loader import Loader
 from pytkdocs.parsers.docstrings.base import Section
@@ -101,7 +102,7 @@ def test_function_without_annotations():
     sections, errors = parse(inspect.getdoc(f), inspect.signature(f))
     assert len(sections) == 4
     assert len(errors) == 1
-    assert "No type in return" in errors[0]
+    assert "No return type/annotation in" in errors[0]
 
 
 def test_function_with_annotations():
@@ -298,27 +299,57 @@ def test_types_and_optional_in_docstring():
 
 
 def test_types_in_signature_and_docstring():
-    """Parse types in both signature and docstring."""
+    """Parse types in both signature and docstring. Should prefer the docstring type"""
 
     def f(x: int, y: int, *, z: int) -> int:
         """
         The types are written both in the signature and in the docstring.
 
         Parameters:
-            x (int): X value.
-            y (int): Y value.
+            x (str): X value.
+            y (str): Y value.
 
         Keyword Args:
-            z (int): Z value.
+            z (str): Z value.
 
         Returns:
-            int: Sum X + Y + Z.
+            str: Sum X + Y + Z.
         """
         return x + y + z
 
     sections, errors = parse(inspect.getdoc(f), inspect.signature(f))
     assert len(sections) == 4
     assert not errors
+
+    assert sections[0].type == Section.Type.MARKDOWN
+    assert sections[1].type == Section.Type.PARAMETERS
+    assert sections[2].type == Section.Type.KEYWORD_ARGS
+    assert sections[3].type == Section.Type.RETURN
+
+    x, y = sections[1].value
+    (z,) = sections[2].value
+    r = sections[3].value
+
+    assert x.name == "x"
+    assert x.annotation == "str"
+    assert x.description == "X value."
+    assert x.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD
+    assert x.default is inspect.Signature.empty
+
+    assert y.name == "y"
+    assert y.annotation == "str"
+    assert y.description == "Y value."
+    assert y.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD
+    assert y.default is inspect.Signature.empty
+
+    assert z.name == "z"
+    assert z.annotation == "str"
+    assert z.description == "Z value."
+    assert z.kind is inspect.Parameter.KEYWORD_ONLY
+    assert z.default is inspect.Signature.empty
+
+    assert r.annotation == "str"
+    assert r.description == "Sum X + Y + Z."
 
 
 def test_close_sections():
@@ -498,7 +529,7 @@ def test_invalid_sections():
     assert len(sections) == 1
     for error in errors[:3]:
         assert "Empty" in error
-    assert "No return type" in errors[3]
+    assert "Empty return section at line" in errors[3]
     assert "Empty" in errors[-1]
 
 
@@ -629,3 +660,84 @@ def test_parse_module_attributes_section():
         {"name": "E", "annotation": "float", "description": "Epsilon."},
     ]
     assert [serialize_attribute(attr) for attr in attr_section.value] == expected
+
+
+def test_docstring_with_yield_section():
+    """Parse Yields section."""
+
+    def f():
+        """A useless range wrapper.
+
+        Yields:
+            int: Integers.
+        """
+        yield from range(10)
+
+    sections, errors = parse(inspect.getdoc(f), inspect.signature(f))
+    assert len(sections) == 2
+    annotated = sections[1].value
+    assert annotated.annotation == "int"
+    assert annotated.description == "Integers."
+    assert not errors
+
+
+def test_docstring_with_yield_section_and_return_annotation():
+    """Parse Yields section."""
+
+    def f() -> Iterator[int]:
+        """A useless range wrapper.
+
+        Yields:
+            Integers.
+        """
+        yield from range(10)
+
+    sections, errors = parse(inspect.getdoc(f), inspect.signature(f))
+    assert len(sections) == 2
+    annotated = sections[1].value
+    assert annotated.annotation is Iterator[int]
+    assert annotated.description == "Integers."
+    assert not errors
+
+
+def test_keyword_args_no_type():
+    """Parse types for keyword arguments."""
+
+    def f(**kwargs):
+        """Do nothing.
+
+        Keyword arguments:
+            a: No type.
+        """
+
+    sections, errors = parse(inspect.getdoc(f), inspect.signature(f))
+    assert len(sections) == 2
+    kwargs = sections[1].value
+    assert kwargs[0].name == "a"
+    assert kwargs[0].annotation is inspect.Parameter.empty
+    assert kwargs[0].description == "No type."
+    assert kwargs[0].kind is inspect.Parameter.KEYWORD_ONLY
+    assert kwargs[0].default is inspect.Parameter.empty
+    assert len(errors) == 1
+    assert "No type annotation for parameter" in errors[0]
+
+
+def test_keyword_args_type():
+    """Parse types for keyword arguments."""
+
+    def f(**kwargs):
+        """Do nothing.
+
+        Keyword arguments:
+            a (int): Typed.
+        """
+
+    sections, errors = parse(inspect.getdoc(f), inspect.signature(f))
+    assert len(sections) == 2
+    kwargs = sections[1].value
+    assert kwargs[0].name == "a"
+    assert kwargs[0].annotation == "int"
+    assert kwargs[0].description == "Typed."
+    assert kwargs[0].kind is inspect.Parameter.KEYWORD_ONLY
+    assert kwargs[0].default is inspect.Parameter.empty
+    assert not errors
